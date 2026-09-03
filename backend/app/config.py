@@ -1,5 +1,5 @@
 """
-Settings/config loading for Sentinel Layer.
+Settings/config loading for Kyron Layer.
 
 Phases 0–10: env-driven config loaded via python-dotenv.
 Hot Storage: Local SQLite for sub-millisecond screening & dashboard operations.
@@ -13,9 +13,22 @@ load_dotenv()  # loads .env from project root at import time
 
 
 class Settings:
-    app_name: str = "Sentinel Layer"
-    version: str = "0.1.0"
+    app_name: str = "Kyron — Agent Runtime Security Gateway"
+    version: str = "1.0.0"
     environment: str = os.getenv("ENVIRONMENT", "development")
+
+    # Demo / deployment mode
+    demo_mode: bool = os.getenv("DEMO_MODE", "false").lower() == "true"
+
+    # CORS — comma-separated list, or "*" for open demo
+    allowed_origins_raw: str = os.getenv("ALLOWED_ORIGINS", "*")
+
+    @property
+    def allowed_origins(self) -> list[str]:
+        raw = self.allowed_origins_raw.strip()
+        if raw == "*":
+            return ["*"]
+        return [o.strip() for o in raw.split(",") if o.strip()]
 
     # Phase 4 — Groq LLM-Judge settings
     groq_api_key: str = os.getenv("GROQ_API_KEY", "")
@@ -41,6 +54,7 @@ class Settings:
     jwt_algorithm: str = os.getenv("JWT_ALGORITHM", "HS256")
     jwt_access_token_expire_minutes: int = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
     jwt_agent_token_expire_hours: int = int(os.getenv("JWT_AGENT_TOKEN_EXPIRE_HOURS", "8"))
+    jwt_guest_token_expire_minutes: int = int(os.getenv("JWT_GUEST_TOKEN_EXPIRE_MINUTES", "30"))
 
     # Phase 10 — Google OAuth
     google_client_id: str = os.getenv("GOOGLE_CLIENT_ID", "")
@@ -50,7 +64,7 @@ class Settings:
     # Phase 10 — GitHub OAuth
     github_client_id: str = os.getenv("GITHUB_CLIENT_ID", "")
     github_client_secret: str = os.getenv("GITHUB_CLIENT_SECRET", "")
-    github_redirect_uri: str = "http://localhost:8000/auth/github/callback"
+    github_redirect_uri: str = os.getenv("GITHUB_REDIRECT_URI", "http://localhost:8000/auth/github/callback")
 
     # Phase 10 — Frontend URL (OAuth post-login redirect)
     frontend_url: str = os.getenv("FRONTEND_URL", "http://localhost:5173")

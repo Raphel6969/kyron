@@ -19,7 +19,7 @@ import { Footer } from './components/Footer';
 import { LoginScreen } from './components/LoginScreen';
 import { DashboardView } from './components/DashboardView';
 import { UserSession } from './types';
-import { setStoredToken } from './services/api';
+import { setStoredToken, loginAsGuest } from './services/api';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
@@ -27,15 +27,13 @@ export default function App() {
   const [demoInitialTab, setDemoInitialTab] = useState<'simulation' | 'audit' | 'policy' | 'tokens'>('simulation');
   const [reducedMotion, setReducedMotion] = useState(false);
   const [showRoleToast, setShowRoleToast] = useState(false);
+  const [guestLoading, setGuestLoading] = useState(false);
 
   const handleLoginSuccess = (session: UserSession) => {
     setCurrentUser(session);
-    // Switch directly to the full-screen dashboard page
     setCurrentView('dashboard');
     setShowRoleToast(true);
-    setTimeout(() => {
-      setShowRoleToast(false);
-    }, 4500);
+    setTimeout(() => setShowRoleToast(false), 4500);
   };
 
   const handleLogoutOrSwitchRole = () => {
@@ -44,14 +42,40 @@ export default function App() {
     setCurrentView('landing');
   };
 
+  /** Guest demo — one click, no account needed */
+  const handleGuestLogin = async () => {
+    setGuestLoading(true);
+    try {
+      const data = await loginAsGuest();
+      const guestSession: UserSession = {
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.name,
+        role: 'guest' as any,
+        roleTitle: 'Demo Evaluator',
+        badge: '🎯',
+        permissions: data.user.permissions,
+        is_guest: true,
+      };
+      setCurrentUser(guestSession);
+      setDemoInitialTab('simulation');
+      setCurrentView('dashboard');
+      setShowRoleToast(true);
+      setTimeout(() => setShowRoleToast(false), 5000);
+    } catch (err) {
+      // Fallback — go to login if guest endpoint unavailable
+      setCurrentView('login');
+    } finally {
+      setGuestLoading(false);
+    }
+  };
+
   const handleOpenDemo = (initialTab: 'simulation' | 'audit' | 'policy' | 'tokens' = 'simulation') => {
     setDemoInitialTab(initialTab);
     if (!currentUser) {
-      // Prompt user to select/sign in with their role
       setCurrentView('login');
       return;
     }
-    // Switch directly to the full-screen dashboard page
     setCurrentView('dashboard');
   };
 
@@ -99,8 +123,12 @@ export default function App() {
           <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-slate-900/95 border border-teal-500/50 shadow-[0_0_30px_rgba(45,212,191,0.3)] backdrop-blur-xl text-xs font-mono text-slate-200">
             <span className="text-base">{currentUser.badge}</span>
             <div>
-              <span className="font-bold text-teal-300">Authenticated: {currentUser.name}</span>
-              <span className="text-slate-400 block text-[10px]">{currentUser.roleTitle} • Stage 0 Policy Active</span>
+              <span className="font-bold text-teal-300">
+                {(currentUser as any).is_guest ? '🎯 Guest Session Active' : `Authenticated: ${currentUser.name}`}
+              </span>
+              <span className="text-slate-400 block text-[10px]">
+                {currentUser.roleTitle} • {(currentUser as any).is_guest ? '30 min demo access' : 'Stage 0 Policy Active'}
+              </span>
             </div>
             <button
               type="button"
@@ -125,8 +153,8 @@ export default function App() {
 
       {/* Main Landing Flow */}
       <main className="relative z-10">
-        {/* 1. Hero with Live Telemetry */}
-        <Hero onOpenDemo={handleOpenDemo} reducedMotion={reducedMotion} />
+        {/* 1. Hero with Live Telemetry + Guest CTA */}
+        <Hero onOpenDemo={handleOpenDemo} onGuestLogin={handleGuestLogin} guestLoading={guestLoading} reducedMotion={reducedMotion} />
 
         {/* 2. The 4 Attack Vectors */}
         <AttackSurface />

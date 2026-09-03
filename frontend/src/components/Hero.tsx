@@ -4,6 +4,8 @@ import { fetchEventStats, screenContent, subscribeToEventStream, StatsResponse }
 
 interface HeroProps {
   onOpenDemo: (initialTab?: 'simulation' | 'audit' | 'policy' | 'tokens') => void;
+  onGuestLogin?: () => void;
+  guestLoading?: boolean;
   reducedMotion: boolean;
 }
 
@@ -89,7 +91,7 @@ const PRESET_THREATS: ThreatSample[] = [
   }
 ];
 
-export const Hero: React.FC<HeroProps> = ({ onOpenDemo, reducedMotion }) => {
+export const Hero: React.FC<HeroProps> = ({ onOpenDemo, onGuestLogin, guestLoading, reducedMotion }) => {
   const [activeSampleIndex, setActiveSampleIndex] = useState(0);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [autoPlay, setAutoPlay] = useState(true);
@@ -231,14 +233,27 @@ export const Hero: React.FC<HeroProps> = ({ onOpenDemo, reducedMotion }) => {
 
         {/* Primary Call To Actions */}
         <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto">
+          {onGuestLogin && (
+            <button
+              id="hero-guest-demo-btn"
+              type="button"
+              disabled={guestLoading}
+              onClick={onGuestLogin}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3 rounded-full bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-500 text-slate-950 font-mono text-xs font-black hover:opacity-95 transition-all shadow-xl shadow-teal-500/30 glow-pill cursor-pointer disabled:opacity-50"
+            >
+              <Sparkles className={`w-4 h-4 fill-current ${guestLoading ? 'animate-spin' : ''}`} />
+              <span>{guestLoading ? 'Starting Session...' : 'Try Demo as Guest (No Login)'}</span>
+            </button>
+          )}
+
           <button
             id="hero-attack-sim-btn"
             type="button"
             onClick={() => onOpenDemo('simulation')}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3 rounded-full bg-gradient-to-r from-teal-500 to-indigo-600 text-white font-mono text-xs font-bold hover:opacity-95 transition-all shadow-lg shadow-teal-500/25 glow-pill cursor-pointer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-teal-500 to-indigo-600 text-white font-mono text-xs font-bold hover:opacity-95 transition-all shadow-lg shadow-teal-500/25 glow-pill cursor-pointer"
           >
             <Play className="w-3.5 h-3.5 fill-current" />
-            <span>Launch Live Console</span>
+            <span>Launch Console</span>
           </button>
 
           <a
@@ -246,7 +261,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenDemo, reducedMotion }) => {
             href="#interactive-architecture"
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-white/5 text-slate-200 hover:text-white border border-white/10 hover:border-white/20 hover:bg-white/10 backdrop-blur-md transition-all font-mono text-xs font-semibold"
           >
-            <span>Explore 8-Phase Pipeline</span>
+            <span>8-Phase Pipeline</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </a>
         </div>

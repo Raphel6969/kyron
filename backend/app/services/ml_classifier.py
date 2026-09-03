@@ -106,8 +106,8 @@ class MLClassifierService:
 
         top_similarity, top_id, top_meta = search_results[0]
 
-        # Similarity threshold: similarity >= 0.45 indicates semantic similarity to known attack vector
-        if top_similarity >= 0.45:
+        # Similarity threshold: similarity >= 0.48 indicates semantic similarity to known attack vector
+        if top_similarity >= 0.48:
             ml_score = max(0.0, min(1.0, round(top_similarity, 2)))
             matched_signal = MatchedSignal(
                 stage="ml",

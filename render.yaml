@@ -1,0 +1,33 @@
+# Kyron Layer — Render.com Deployment Config
+# This file enables one-click deploy from your GitHub repo on render.com
+services:
+  - type: web
+    name: kyron-security-gateway
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEMO_MODE
+        value: "true"
+      - key: ALLOWED_ORIGINS
+        value: "*"
+      - key: DATABASE_URL
+        sync: false
+      - key: HOT_DATABASE_URL
+        value: "sqlite:///./sentinel.db"
+      - key: GROQ_API_KEY
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "60"
+      - key: JWT_GUEST_TOKEN_EXPIRE_MINUTES
+        value: "30"
+      - key: POLICY_FILE_PATH
+        value: "policy/policy.example.yaml"
+    # Render will set FRONTEND_URL after deploy — update if you add a custom domain

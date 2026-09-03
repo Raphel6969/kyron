@@ -3,7 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+// In production (single Docker container), API is served from same origin via nginx proxy.
+// In local dev, fall back to the explicit backend port.
+export const API_BASE_URL = (() => {
+  if (import.meta.env.VITE_API_BASE_URL) return import.meta.env.VITE_API_BASE_URL;
+  // If we're not on localhost, we're deployed — use same origin (nginx proxies to backend)
+  if (typeof window !== 'undefined' && !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) {
+    return '';  // same-origin: nginx handles /screen, /auth, etc.
+  }
+  return 'http://127.0.0.1:8000';
+})();
 
 export interface ScreenRequestPayload {
   agent_context: {
@@ -105,6 +114,33 @@ const getHeaders = (token?: string | null): Record<string, string> => {
   }
   return headers;
 };
+
+// ── Auth Helpers ──────────────────────────────────────────────────────────────
+
+/** Create a temporary 30-minute guest session — no account required */
+export async function loginAsGuest(): Promise<{ token: string; user: any }> {
+  const response = await fetch(`${API_BASE_URL}/auth/guest`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!response.ok) throw new Error('Guest session creation failed');
+  const data = await response.json();
+  setStoredToken(data.token);
+  return data;
+}
+
+/** Login with a specific demo role (admin/developer/intern/tech_lead) */
+export async function loginWithDemoRole(role: string): Promise<{ token: string; user: any }> {
+  const response = await fetch(`${API_BASE_URL}/auth/demo-login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role }),
+  });
+  if (!response.ok) throw new Error(`Demo login failed for role: ${role}`);
+  const data = await response.json();
+  setStoredToken(data.token);
+  return data;
+}
 
 // ── Core API Calls ─────────────────────────────────────────────────────────────
 

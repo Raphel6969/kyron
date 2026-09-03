@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { ATTACK_SCENARIOS } from '../data/content';
 import { UserSession, UserRole, VerdictType } from '../types';
+import { RiskTimelineChart } from './RiskTimelineChart';
 import { 
   runAttackScenario, 
   startContinuousSimulation, 
@@ -1010,6 +1011,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   </span>
                 </div>
               </div>
+
+              {/* Real-time Risk Score Timeline Chart */}
+              <RiskTimelineChart events={auditLogs} />
 
               {/* Audit Table */}
               <div className="rounded-2xl bg-slate-900/80 border border-white/10 overflow-x-auto shadow-2xl">

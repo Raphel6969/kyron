@@ -277,3 +277,60 @@ async def get_me(current_user: UserDB = Depends(get_current_user)):
         "is_active": current_user.is_active,
         "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
     }
+
+
+# ── /auth/guest ── Public guest demo session ──────────────────────────────────
+
+@router.post("/guest")
+async def create_guest_session():
+    """
+    Issues a temporary 30-minute read-only guest JWT.
+    Allows judges and evaluators to explore the dashboard without creating an account.
+    The guest role has read-only permissions: no policy edits, no token minting.
+    """
+    import uuid
+    guest_id = f"guest_{uuid.uuid4().hex[:8]}"
+
+    payload = {
+        "sub": guest_id,
+        "email": "guest@kyron.demo",
+        "name": "Guest Evaluator",
+        "role": "guest",
+        "is_guest": True,
+        "permissions": {
+            # Read-only: can view audit, stats, run simulations
+            "search_web": True,
+            "read_file": True,
+            "write_file": False,
+            "execute_code": False,
+            "call_http": False,
+            "send_email": False,
+            "delete_file": False,
+            "admin_access": False,
+        },
+    }
+
+    from datetime import datetime, timezone, timedelta
+    from jose import jwt as jose_jwt
+
+    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_guest_token_expire_minutes)
+    payload["exp"] = expire
+    payload["iat"] = datetime.now(timezone.utc)
+
+    token = jose_jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
+
+    return {
+        "token": token,
+        "user": {
+            "id": guest_id,
+            "email": "guest@kyron.demo",
+            "name": "Guest Evaluator",
+            "role": "guest",
+            "is_guest": True,
+            "badge": "🎯",
+            "roleTitle": "Demo Evaluator",
+            "permissions": payload["permissions"],
+            "expires_in_minutes": settings.jwt_guest_token_expire_minutes,
+        },
+        "message": f"Guest session active for {settings.jwt_guest_token_expire_minutes} minutes. Explore freely!",
+    }
