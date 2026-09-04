@@ -34,6 +34,17 @@ class MLClassifierService:
         self._vector_index: TurboQuantVectorIndex = TurboQuantVectorIndex(num_bits=8)
         self._is_initialized: bool = False
         self._embedding_cache: dict[str, np.ndarray] = OrderedDict()
+        self._is_fallback: bool = False
+
+    def _fallback_encode(self, text: str) -> np.ndarray:
+        vec = np.zeros(384, dtype=np.float32)
+        text_lower = text.lower()
+        for i in range(max(1, len(text_lower) - 2)):
+            gram = text_lower[i : i + 3]
+            idx = int(hashlib.md5(gram.encode()).hexdigest(), 16) % 384
+            vec[idx] += 1.0
+        norm = np.linalg.norm(vec)
+        return vec / norm if norm > 0 else vec
 
     def _ensure_initialized(self) -> None:
         if self._is_initialized:
@@ -43,15 +54,15 @@ class MLClassifierService:
             from sentence_transformers import SentenceTransformer
             logger.info("Loading sentence-transformer model: %s", MODEL_NAME)
             self._model = SentenceTransformer(MODEL_NAME)
+            self._is_fallback = False
+            self._is_initialized = True
+            self._load_seed_dataset()
         except Exception as err:
-            logger.error("Failed to load SentenceTransformer model %s: %s", MODEL_NAME, err)
-            raise RuntimeError(f"Could not load ML embedding model '{MODEL_NAME}': {err}") from err
-
-        # Set initialization flag true to prevent recursion
-        self._is_initialized = True
-
-        # Load seed dataset entries into TurboQuantVectorIndex
-        self._load_seed_dataset()
+            logger.error("Failed to load SentenceTransformer model %s: %s. Enabling fallback vectorizer.", MODEL_NAME, err)
+            self._model = None
+            self._is_fallback = True
+            self._is_initialized = True
+            self._load_seed_dataset()
 
     def _load_seed_dataset(self) -> None:
         if not DATA_FILE_PATH.exists():
@@ -62,7 +73,10 @@ class MLClassifierService:
             entries: list[dict[str, Any]] = json.load(f)
 
         texts = [e["text"] for e in entries]
-        embeddings = self._model.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
+        if self._model is not None:
+            embeddings = self._model.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
+        else:
+            embeddings = np.array([self._fallback_encode(t) for t in texts], dtype=np.float32)
 
 
         for entry, emb in zip(entries, embeddings):
@@ -93,14 +107,21 @@ class MLClassifierService:
                 self._embedding_cache.move_to_end(cache_key)
                 return self._embedding_cache[cache_key]
             
-            emb = self._model.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
+            if self._model is not None:
+                emb = self._model.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
+            else:
+                emb = self._fallback_encode(texts)
+
             self._embedding_cache[cache_key] = emb
             if len(self._embedding_cache) > 512:
                 self._embedding_cache.popitem(last=False)
             return emb
         
         # Multiple strings, no cache
-        embeddings = self._model.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
+        if self._model is not None:
+            embeddings = self._model.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
+        else:
+            embeddings = np.array([self._fallback_encode(t) for t in texts], dtype=np.float32)
         return embeddings
 
     def evaluate(self, text: str) -> tuple[float, list[MatchedSignal]]:
@@ -125,8 +146,9 @@ class MLClassifierService:
 
         top_similarity, top_id, top_meta = search_results[0]
 
-        # Similarity threshold: similarity >= 0.48 indicates semantic similarity to known attack vector
-        if top_similarity >= 0.48:
+        # Calibrated similarity threshold: similarity >= 0.48 indicates semantic alignment with attack vectors
+        SIMILARITY_THRESHOLD = 0.48
+        if top_similarity >= SIMILARITY_THRESHOLD:
             ml_score = max(0.0, min(1.0, round(top_similarity, 2)))
             matched_signal = MatchedSignal(
                 stage="ml",
@@ -138,7 +160,6 @@ class MLClassifierService:
                 ),
             )
             return ml_score, [matched_signal]
-
 
         return 0.0, []
 

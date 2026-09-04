@@ -158,11 +158,31 @@ app.include_router(agents_router)
 
 @app.get("/health", tags=["system"])
 async def health() -> dict:
-    """Liveness check for Render health monitoring."""
+    """Liveness & readiness check for Render health monitoring."""
+    ml_service = get_ml_classifier()
+    is_loaded = ml_service._is_initialized and (ml_service._model is not None or getattr(ml_service, '_is_fallback', False))
     return {
         "status": "ok",
         "version": "1.0.0",
         "demo_mode": settings.demo_mode,
         "groq_configured": bool(settings.groq_api_key),
         "environment": settings.environment,
+        "ml_model_loaded": is_loaded,
+        "ml_model_name": "all-MiniLM-L6-v2" if not getattr(ml_service, '_is_fallback', False) else "char-trigram-quant (fallback)",
+        "ml_vector_count": ml_service._vector_index.size(),
+    }
+
+
+@app.get("/ml/status", tags=["system"])
+async def ml_status() -> dict:
+    """Explicit verification of Stage 2 TurboQuant ML vector index status."""
+    ml_service = get_ml_classifier()
+    ml_service._ensure_initialized()
+    return {
+        "initialized": ml_service._is_initialized,
+        "is_fallback": getattr(ml_service, "_is_fallback", False),
+        "model_name": "all-MiniLM-L6-v2" if not getattr(ml_service, '_is_fallback', False) else "fallback",
+        "indexed_vectors": ml_service._vector_index.size(),
+        "memory_bytes": ml_service._vector_index.memory_bytes(),
+        "cache_entries": len(ml_service._embedding_cache),
     }

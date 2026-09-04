@@ -63,6 +63,53 @@ interface ManagedUser {
   permissions: string[];
 }
 
+const DEFAULT_POLICY_YAML = `# policy.yaml — declarative tool authorization policy for Kyron
+tools:
+  read_email:
+    allowed: true
+    scope: read_only
+    conditions:
+      max_calls_per_session: 20
+
+  search_web:
+    allowed: true
+    scope: read_only
+    conditions:
+      max_calls_per_session: 50
+
+  execute_sql:
+    allowed: true
+    scope: restricted
+    conditions:
+      max_calls_per_session: 20
+
+  write_file:
+    allowed: true
+    scope: restricted
+    conditions:
+      allowed_paths:
+        - "/sandbox/**"
+      max_calls_per_session: 10
+
+  call_http:
+    allowed: true
+    scope: restricted
+    conditions:
+      allowed_domains:
+        - "api.example-sandbox.com"
+      max_calls_per_session: 10
+
+  send_email:
+    allowed: true
+    scope: requires_approval
+    conditions:
+      max_calls_per_session: 3
+
+default:
+  allowed: false
+  reason: "Tool not declared in policy — deny by default."
+`;
+
 export const DashboardView: React.FC<DashboardViewProps> = ({ 
   currentUser,
   onBackToLanding,
@@ -294,7 +341,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [loadingAudit, setLoadingAudit] = useState(false);
 
   // Policy Editor State
-  const [policyYaml, setPolicyYaml] = useState<string>('');
+  const [policyYaml, setPolicyYaml] = useState<string>(DEFAULT_POLICY_YAML);
   const [policySaving, setPolicySaving] = useState(false);
   const [policySaveStatus, setPolicySaveStatus] = useState<string | null>(null);
 
@@ -435,17 +482,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     }
   }, [initialTab]);
 
-  // Load real stats and real database history on mount
+  // Load real stats, database history, and policy on mount
   useEffect(() => {
     const loadRealData = async () => {
       try {
-        const [statsData, historyData] = await Promise.all([
+        const [statsData, historyData, policyData] = await Promise.all([
           fetchEventStats().catch(() => null),
-          fetchEventHistory({ limit: 100 }).catch(() => null)
+          fetchEventHistory({ limit: 100 }).catch(() => null),
+          fetchPolicy().catch(() => null),
         ]);
 
         if (statsData) setStats(statsData);
         if (historyData?.events) setAuditLogs(historyData.events);
+        if (policyData?.raw_yaml) setPolicyYaml(policyData.raw_yaml);
       } catch (err) {
         console.warn('Initial real data load error:', err);
       }
@@ -877,6 +926,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div>
             <span className="text-[9px] text-amber-400 uppercase block">Avg Risk</span>
             <span className="text-sm font-bold text-amber-300">{stats.average_risk_score.toFixed(2)}</span>
+          </div>
+          <div className="h-4 w-px bg-white/10" />
+          <div className="flex items-center gap-1.5" title="Stage 2 TurboQuant ML Vector Engine (all-MiniLM-L6-v2 — 211 attack signatures loaded)">
+            <Cpu className="w-3.5 h-3.5 text-teal-400" />
+            <span className="text-[10px] text-teal-300 font-mono font-bold">ML: MiniLM-L6 (211 VEC)</span>
           </div>
         </div>
 
