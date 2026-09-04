@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *.egg-info/
+build/
 .venv/
 venv/
 .pytest_cache/
@@ -15,9 +16,10 @@ venv/
 *.db-shm
 *.db-wal
 
-# Node / frontend (Phase 7+)
+# Node / frontend / python packaging
 node_modules/
 dist/
+**/dist/
 .vite/
 
 # OS
