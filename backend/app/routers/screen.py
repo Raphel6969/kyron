@@ -10,6 +10,8 @@ Phase 10 scope: Stage 0 (token permission check) added before 3-stage cascade.
 from datetime import datetime, timezone
 import json
 import logging
+import time
+from collections import defaultdict, deque
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Header
@@ -17,7 +19,7 @@ from fastapi import APIRouter, Depends, Header
 from app.db.models import ScreenEventDB
 from app.db.session import SessionLocal
 from app.middleware.auth import read_agent_token
-from app.models import ScreenRequest, ScreenResponse, VerdictType, PolicyCheck
+from app.models import ScreenRequest, ScreenResponse, VerdictType, PolicyCheck, BatchScreenRequest, BatchScreenResponse
 from app.services.llm_judge import evaluate_llm_judge, should_escalate_to_judge
 from app.services.ml_classifier import evaluate_ml
 from app.services.policy_engine import evaluate_policy
@@ -25,6 +27,8 @@ from app.services.rule_engine import evaluate_rules
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["screening"])
+
+_agent_call_tracker: dict[str, deque] = defaultdict(lambda: deque())
 
 
 @router.post("/screen", response_model=ScreenResponse)
@@ -96,11 +100,30 @@ async def screen_content(
                 policy_check=PolicyCheck(tool_name=tool_name, allowed=False, reason="Token permission denied."),
             )
 
+    # ── Rate Limiting ─────────────────────────────────────────────────────────
+    now_ts = time.time()
+    tracker = _agent_call_tracker[agent_id]
+    tracker.append(now_ts)
+    while tracker and now_ts - tracker[0] > 10:
+        tracker.popleft()
+    rate_limit_triggered = len(tracker) > 20
+
     # ── Stage 1: Rule Engine ──────────────────────────────────────────────────
+    t0 = time.perf_counter()
     rule_score, rule_signals = evaluate_rules(text)
+    t1 = time.perf_counter()
 
     # ── Stage 2: ML Classifier ────────────────────────────────────────────────
     ml_score, ml_signals = evaluate_ml(text)
+    t2 = time.perf_counter()
+
+    attack_category = None
+    for s in ml_signals:
+        if s.detail and "to known '" in s.detail:
+            try:
+                attack_category = s.detail.split("to known '")[1].split("'")[0]
+            except Exception:
+                pass
 
     # ── Stage 3: LLM-Judge (selective) ───────────────────────────────────────
     judge_signals  = []
@@ -111,6 +134,13 @@ async def screen_content(
         judge_score, judge_signals, judge_reasoning = evaluate_llm_judge(
             text, agent_id=agent_id, tool_name=tool_name
         )
+    t3 = time.perf_counter()
+    
+    stage_timings_ms = {
+        "rule_ms": (t1 - t0) * 1000,
+        "ml_ms": (t2 - t1) * 1000,
+        "llm_ms": (t3 - t2) * 1000 if judge_score is not None else 0.0
+    }
 
     # ── Verdict Fusion ────────────────────────────────────────────────────────
     all_scores    = [rule_score, ml_score]
@@ -118,6 +148,8 @@ async def screen_content(
         all_scores.append(judge_score)
 
     risk_score      = min(1.0, max(all_scores))
+    if rate_limit_triggered and risk_score < 0.5:
+        risk_score = 0.5
     matched_signals = rule_signals + ml_signals + judge_signals
 
     if risk_score >= 0.7:
@@ -168,6 +200,7 @@ async def screen_content(
             explanation=explanation, matched_signals_json=signals_json,
             policy_allowed=policy_check.allowed, policy_reason=policy_check.reason,
             user_id=user_id, user_email=user_email, user_role=user_role,
+            llm_reasoning=judge_reasoning, attack_category=attack_category,
         )
         from app.routers.events import broadcast_event
         broadcast_event({
@@ -186,6 +219,9 @@ async def screen_content(
             "user_id": user_id,
             "user_email": user_email,
             "user_role": user_role,
+            "stage_timings_ms": stage_timings_ms,
+            "llm_reasoning": judge_reasoning,
+            "attack_category": attack_category,
         })
     except Exception as err:
         logger.warning("Failed to log screen event: %s", err)
@@ -196,6 +232,9 @@ async def screen_content(
         verdict=verdict,
         explanation=explanation,
         policy_check=policy_check,
+        stage_timings_ms=stage_timings_ms,
+        llm_reasoning=judge_reasoning,
+        attack_category=attack_category,
     )
 
 
@@ -204,6 +243,7 @@ def _log_event(
     risk_score: float, verdict: str, explanation: str,
     matched_signals_json: str, policy_allowed: bool, policy_reason: str,
     user_id: Optional[str] = None, user_email: Optional[str] = None, user_role: Optional[str] = None,
+    llm_reasoning: Optional[str] = None, attack_category: Optional[str] = None,
 ) -> tuple[int, str]:
     with SessionLocal() as db:
         event = ScreenEventDB(
@@ -212,9 +252,35 @@ def _log_event(
             explanation=explanation, matched_signals_json=matched_signals_json,
             policy_allowed=policy_allowed, policy_reason=policy_reason,
             user_id=user_id, user_email=user_email, user_role=user_role,
+            llm_reasoning=llm_reasoning, attack_category=attack_category,
         )
         db.add(event)
         db.commit()
         db.refresh(event)
         ts_str = event.timestamp.isoformat() if event.timestamp else datetime.now(timezone.utc).isoformat()
         return event.id, ts_str
+
+
+@router.post("/screen/batch", response_model=BatchScreenResponse)
+async def screen_batch(
+    batch: BatchScreenRequest,
+    agent_token: Optional[dict] = Depends(read_agent_token),
+) -> BatchScreenResponse:
+    """Screen multiple requests in one HTTP call. Max 50 per batch."""
+    results = []
+    for req in batch.requests:
+        # Reuse individual screen logic
+        result = await screen_content(req, agent_token)
+        results.append(result)
+    
+    blocked = sum(1 for r in results if r.verdict == "block")
+    allowed = sum(1 for r in results if r.verdict == "allow")
+    approvals = sum(1 for r in results if r.verdict == "require_approval")
+    
+    return BatchScreenResponse(
+        results=results,
+        total=len(results),
+        blocked_count=blocked,
+        allow_count=allowed,
+        require_approval_count=approvals,
+    )

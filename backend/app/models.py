@@ -55,3 +55,18 @@ class ScreenResponse(BaseModel):
     verdict: VerdictType
     explanation: str
     policy_check: PolicyCheck
+    stage_timings_ms: dict[str, float] = Field(default_factory=dict)
+    llm_reasoning: str | None = None
+    attack_category: str | None = None
+
+
+class BatchScreenRequest(BaseModel):
+    requests: list[ScreenRequest] = Field(..., max_length=50)
+
+
+class BatchScreenResponse(BaseModel):
+    results: list[ScreenResponse]
+    total: int
+    blocked_count: int
+    allow_count: int
+    require_approval_count: int

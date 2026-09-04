@@ -90,6 +90,10 @@ def init_db() -> None:
                         conn.execute(text("ALTER TABLE screen_events ADD COLUMN user_email VARCHAR(256);"))
                     if "user_role" not in existing_cols:
                         conn.execute(text("ALTER TABLE screen_events ADD COLUMN user_role VARCHAR(32);"))
+                    if "llm_reasoning" not in existing_cols:
+                        conn.execute(text("ALTER TABLE screen_events ADD COLUMN llm_reasoning TEXT;"))
+                    if "attack_category" not in existing_cols:
+                        conn.execute(text("ALTER TABLE screen_events ADD COLUMN attack_category VARCHAR(64);"))
                     conn.commit()
             except Exception as e:
                 logger.debug("SQLite schema check: %s", e)

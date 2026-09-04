@@ -202,6 +202,8 @@ async def get_event_history(
                     "verdict": r.verdict,
                     "explanation": r.explanation,
                     "matched_signals": signals,
+                    "llm_reasoning": r.llm_reasoning,
+                    "attack_category": r.attack_category,
                     "policy_allowed": r.policy_allowed,
                     "policy_reason": r.policy_reason,
                     "user_id": r.user_id,

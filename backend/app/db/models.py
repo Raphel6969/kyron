@@ -56,6 +56,8 @@ class ScreenEventDB(Base):
     user_id    = Column(String(128), nullable=True, index=True)
     user_email = Column(String(256), nullable=True)
     user_role  = Column(String(32),  nullable=True)
+    llm_reasoning = Column(Text, nullable=True)
+    attack_category = Column(String(64), nullable=True)
 
 
 # ── Phase 10 — Auth tables ────────────────────────────────────────────────────

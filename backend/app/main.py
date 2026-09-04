@@ -20,6 +20,8 @@ from app.routers.events import router as events_router
 from app.routers.screen import router as screen_router
 from app.routers.tokens import router as tokens_router
 from app.routers.users import router as users_router
+from app.routers.approvals import router as approvals_router
+from app.routers.agents import router as agents_router
 from app.services.ml_classifier import get_ml_classifier
 from app.services.policy_engine import get_policy_engine
 from app.services.rule_engine import evaluate_rules
@@ -150,6 +152,8 @@ app.include_router(events_router)
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(tokens_router)
+app.include_router(approvals_router)
+app.include_router(agents_router)
 
 
 @app.get("/health", tags=["system"])

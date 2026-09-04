@@ -9,6 +9,9 @@ import json
 import logging
 from pathlib import Path
 from typing import Any, Sequence
+import functools
+import hashlib
+from collections import OrderedDict
 import numpy as np
 
 from app.models import MatchedSignal
@@ -30,6 +33,7 @@ class MLClassifierService:
         self._model: Any = None
         self._vector_index: TurboQuantVectorIndex = TurboQuantVectorIndex(num_bits=8)
         self._is_initialized: bool = False
+        self._embedding_cache: dict[str, np.ndarray] = OrderedDict()
 
     def _ensure_initialized(self) -> None:
         if self._is_initialized:
@@ -81,6 +85,21 @@ class MLClassifierService:
     def encode(self, texts: str | list[str]) -> np.ndarray:
         """Generates normalized float32 embedding vector(s)."""
         self._ensure_initialized()
+        
+        # If single string, use cache
+        if isinstance(texts, str):
+            cache_key = hashlib.md5(texts.encode()).hexdigest()
+            if cache_key in self._embedding_cache:
+                self._embedding_cache.move_to_end(cache_key)
+                return self._embedding_cache[cache_key]
+            
+            emb = self._model.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
+            self._embedding_cache[cache_key] = emb
+            if len(self._embedding_cache) > 512:
+                self._embedding_cache.popitem(last=False)
+            return emb
+        
+        # Multiple strings, no cache
         embeddings = self._model.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
         return embeddings
 

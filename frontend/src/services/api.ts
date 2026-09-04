@@ -211,6 +211,35 @@ export async function fetchScenarios(): Promise<{ scenarios: ScenarioDefinition[
   return response.json();
 }
 
+export interface PendingApproval {
+  id: number;
+  timestamp: string;
+  agent_id: string;
+  tool_name: string;
+  risk_score: number;
+  explanation: string;
+  matched_signals: any[];
+  llm_reasoning?: string;
+  attack_category?: string;
+  user_email?: string;
+  user_role?: string;
+}
+
+export async function fetchPendingApprovals(): Promise<{ pending: PendingApproval[]; count: number }> {
+  const response = await fetch(`${API_BASE_URL}/approvals/pending`, { headers: getHeaders() });
+  if (!response.ok) return { pending: [], count: 0 };
+  return response.json();
+}
+
+export async function decideApproval(eventId: number, approved: boolean, reason = ''): Promise<any> {
+  const response = await fetch(`${API_BASE_URL}/approvals/${eventId}/decide`, {
+    method: 'POST', headers: getHeaders(), body: JSON.stringify({ approved, reason }),
+  });
+  if (!response.ok) throw new Error('Failed to decide');
+  return response.json();
+}
+
+
 /** Run single attack scenario */
 export async function runAttackScenario(scenarioId: number): Promise<any> {
   const response = await fetch(`${API_BASE_URL}/demo/run-scenario`, {

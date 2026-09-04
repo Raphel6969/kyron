@@ -11,6 +11,7 @@ import { WhatIsSentinel } from './components/WhatIsSentinel';
 import { SecurityPillars } from './components/SecurityPillars';
 import { DetectionCascade } from './components/DetectionCascade';
 import { PolicyEngine } from './components/PolicyEngine';
+import { IntegrationBadges } from './components/IntegrationBadges';
 import { AttackScenarios } from './components/AttackScenarios';
 import { InteractiveArchitecture } from './components/InteractiveArchitecture';
 import { AgentIntegration } from './components/AgentIntegration';
@@ -21,7 +22,9 @@ import { DashboardView } from './components/DashboardView';
 import { UserSession } from './types';
 import { setStoredToken, loginAsGuest } from './services/api';
 
-export default function App() {
+import { ToastProvider } from './components/ToastSystem';
+
+function AppContent() {
   const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
   const [currentView, setCurrentView] = useState<'landing' | 'login' | 'dashboard'>('landing');
   const [demoInitialTab, setDemoInitialTab] = useState<'simulation' | 'audit' | 'policy' | 'tokens' | 'users' | 'library'>('simulation');
@@ -162,6 +165,8 @@ export default function App() {
         {/* 3. The Security Core */}
         <WhatIsSentinel />
 
+        <IntegrationBadges />
+
         {/* 4. Four Security Pillars */}
         <SecurityPillars />
 
@@ -189,5 +194,13 @@ export default function App() {
       {/* Footer */}
       <Footer />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ToastProvider>
+      <AppContent />
+    </ToastProvider>
   );
 }
