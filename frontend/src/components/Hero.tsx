@@ -105,19 +105,21 @@ export const Hero: React.FC<HeroProps> = ({ onOpenDemo, onGuestLogin, guestLoadi
     block_rate: 82.9,
   });
 
+  const [liveStats, setLiveStats] = useState<any>(null);
+
   const activeSample = threats[activeSampleIndex];
 
-  // Fetch real live stats from backend and subscribe to SSE
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const liveStats = await fetchEventStats();
-        setStats(liveStats);
+        const data = await fetchEventStats();
+        setLiveStats(data);
+        setStats(data);
       } catch (e) {
-        // Fallback to initial stats if backend warming up
       }
     };
     loadStats();
+    const interval = setInterval(loadStats, 8000);
 
     const unsubscribe = subscribeToEventStream((event) => {
       if (event.verdict || event.type === 'AGENT_STEP') {
@@ -125,7 +127,10 @@ export const Hero: React.FC<HeroProps> = ({ onOpenDemo, onGuestLogin, guestLoadi
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      clearInterval(interval);
+      unsubscribe();
+    };
   }, []);
 
   // Auto-ticker cycle when autoPlay is enabled
@@ -207,28 +212,22 @@ export const Hero: React.FC<HeroProps> = ({ onOpenDemo, onGuestLogin, guestLoadi
           Evaluating every untrusted prompt and proposed tool call in <strong className="text-teal-300 font-mono">&lt;1.8ms</strong> before execution occurs.
         </p>
 
-        {/* Global Live Telemetry Stat Bar (From Reference 1 & 2) */}
-        <div className="mt-6 w-full max-w-3xl grid grid-cols-2 sm:grid-cols-5 gap-2.5 p-2 rounded-2xl bg-slate-950/70 border border-white/10 backdrop-blur-xl shadow-2xl font-mono text-left">
-          <div className="p-2.5 rounded-xl bg-white/5 border border-white/5">
-            <span className="text-[10px] text-slate-400 block uppercase font-medium">Screened</span>
-            <span className="text-lg font-black text-white">{stats.total_screened}</span>
-          </div>
-          <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20">
-            <span className="text-[10px] text-rose-400 block uppercase font-medium">Blocked</span>
-            <span className="text-lg font-black text-rose-400">{stats.blocked}</span>
-          </div>
-          <div className="p-2.5 rounded-xl bg-teal-500/10 border border-teal-500/20">
-            <span className="text-[10px] text-teal-400 block uppercase font-medium">Allowed</span>
-            <span className="text-lg font-black text-teal-300">{stats.allowed}</span>
-          </div>
-          <div className="p-2.5 rounded-xl bg-white/5 border border-white/5">
-            <span className="text-[10px] text-slate-400 block uppercase font-medium">Block Rate</span>
-            <span className="text-lg font-black text-rose-400">{stats.block_rate}%</span>
-          </div>
-          <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 col-span-2 sm:col-span-1">
-            <span className="text-[10px] text-amber-400 block uppercase font-medium">Avg Risk</span>
-            <span className="text-lg font-black text-amber-300">{stats.average_risk_score.toFixed(2)}</span>
-          </div>
+        {/* Global Live Telemetry Stat Bar */}
+        <div className="mt-6 w-full max-w-4xl grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+          {[
+            { label: 'Total Screened', value: liveStats?.total_screened, icon: '🛡️' },
+            { label: 'Attacks Blocked', value: liveStats?.blocked, icon: '🚫' },
+            { label: 'Block Rate', value: liveStats?.block_rate ? `${liveStats.block_rate}%` : null, icon: '📊' },
+            { label: 'Avg Risk Score', value: liveStats?.average_risk_score?.toFixed(2), icon: '⚡' }
+          ].map((stat, i) => (
+            <div key={i} className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center flex flex-col justify-center animate-in fade-in duration-500">
+              <div className="text-xl mb-1">{stat.icon}</div>
+              <div className="text-2xl font-bold font-mono text-white mb-1">
+                {stat.value !== undefined && stat.value !== null ? stat.value : <span className="opacity-50">---</span>}
+              </div>
+              <div className="text-[10px] text-slate-500 uppercase tracking-wider">{stat.label}</div>
+            </div>
+          ))}
         </div>
 
         {/* Primary Call To Actions */}

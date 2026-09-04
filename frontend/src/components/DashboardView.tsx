@@ -9,6 +9,11 @@ import { ATTACK_SCENARIOS } from '../data/content';
 import { UserSession, UserRole, VerdictType } from '../types';
 import { RiskTimelineChart } from './RiskTimelineChart';
 import { LibraryInformationView } from './LibraryInformationView';
+import { useToast } from './ToastSystem';
+import { VerdictDonutChart } from './VerdictDonutChart';
+import { CategoryBreakdownChart } from './CategoryBreakdownChart';
+import { EventForensicDrawer } from './EventForensicDrawer';
+import { ApprovalQueueView } from './ApprovalQueueView';
 import { 
   runAttackScenario, 
   startContinuousSimulation, 
@@ -61,12 +66,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   initialTab = 'simulation',
   reducedMotion = false
 }) => {
-  const [activeTab, setActiveTab] = useState<'simulation' | 'audit' | 'policy' | 'tokens' | 'users' | 'library'>(initialTab);
+  const toast = useToast();
+  const [activeTab, setActiveTab] = useState<'simulation' | 'audit' | 'policy' | 'tokens' | 'users' | 'library' | 'approvals'>(initialTab as any);
+  const [newEventCount, setNewEventCount] = useState(0);
+  const [forensicEvent, setForensicEvent] = useState<AuditEventItem | null>(null);
+  const [auditChartStats, setAuditChartStats] = useState({ blocked: 0, allowed: 0, requires_approval: 0 });
   
   // Continuous agents toggle
   const [continuousMode, setContinuousMode] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as Element;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+      const map: Record<string, typeof activeTab> = { '1':'simulation','2':'audit','3':'policy','4':'tokens','5':'library','6':'approvals' };
+      if (map[e.key]) setActiveTab(map[e.key]);
+      if (e.key === 'Escape') setForensicEvent(null);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   // Live telemetry stream events with deduplication
   const [liveStreamEvents, setLiveStreamEvents] = useState<Array<{
@@ -78,6 +99,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     verdict: 'ALLOW' | 'BLOCK' | 'REQUIRE_APPROVAL';
     reason: string;
     rule: string;
+    matched_signals?: any[];
   }>>([]);
 
   const receivedEventKeys = useRef<Set<string>>(new Set());
@@ -276,10 +298,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         risk: Number(sseEvent.risk_score !== undefined ? sseEvent.risk_score : 0),
         verdict: (sseEvent.verdict?.toUpperCase() as any) || (sseEvent.risk_score > 0.7 ? 'BLOCK' : 'ALLOW'),
         reason: sseEvent.explanation || sseEvent.security_summary || 'Real-time telemetry event.',
-        rule: sseEvent.scenario_id ? `SCENARIO_0${sseEvent.scenario_id}` : (sseEvent.rule || 'KYRON_CASCADE')
+        rule: sseEvent.scenario_id ? `SCENARIO_0${sseEvent.scenario_id}` : (sseEvent.rule || 'KYRON_CASCADE'),
+        matched_signals: sseEvent.matched_signals || []
       };
 
       setLiveStreamEvents((prev) => [newStreamItem, ...prev.slice(0, 49)]);
+      if (activeTab !== 'audit') setNewEventCount(prev => prev + 1);
 
       // Dynamically update stats from real live events
       setStats((prev) => {
@@ -315,7 +339,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     });
 
     return () => unsubscribe();
-  }, [currentUser]);
+  }, [currentUser, activeTab]);
 
   // Reload audit history when audit tab opens or filter changes
   useEffect(() => {
@@ -327,6 +351,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         })
         .catch(() => {})
         .finally(() => setLoadingAudit(false));
+        
+      fetchEventStats().then(data => {
+        setAuditChartStats({
+          blocked: data.blocked || 0,
+          allowed: data.allowed || 0,
+          requires_approval: data.requires_approval || 0
+        });
+      }).catch(() => {});
     }
   }, [activeTab, auditVerdictFilter]);
 
@@ -387,7 +419,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           risk: rScore,
           verdict: vUpper,
           reason: sr.explanation || scenario.sentinelOutcome.explanation,
-          rule: `SCENARIO_0${scenarioNumber}`
+          rule: `SCENARIO_0${scenarioNumber}`,
+          matched_signals: sr.matched_signals
         };
         setLiveStreamEvents((prev) => {
           if (prev.some(e => e.id === directEvent.id)) return prev;
@@ -498,7 +531,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   const handleGenerateToken = async () => {
     if (currentUser?.role === 'intern') {
-      alert('Permission Denied: Intern accounts cannot issue Stage 0 Agent Tokens.');
+      toast.error('Permission Denied: Intern accounts cannot issue Stage 0 Agent Tokens.');
       return;
     }
 
@@ -723,7 +756,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
             <button
               type="button"
-              onClick={() => setActiveTab('audit')}
+              onClick={() => { setActiveTab('audit'); setNewEventCount(0); }}
               className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-mono transition-all text-left cursor-pointer ${
                 activeTab === 'audit'
                   ? 'bg-gradient-to-r from-teal-500/20 to-indigo-600/20 text-teal-300 border border-teal-500/40 font-bold shadow-md shadow-teal-500/10'
@@ -731,10 +764,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               }`}
             >
               <Database className="w-4 h-4 text-indigo-400" />
-              <div>
+              <div className="flex-1">
                 <span className="block font-bold">Audit Logs</span>
                 <span className="text-[10px] text-slate-500 font-normal">Real SQLite IST Traces</span>
               </div>
+              {newEventCount > 0 && <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-500/30 text-teal-300 border border-teal-500/30">{newEventCount > 99 ? '99+' : newEventCount}</span>}
             </button>
 
             <button
@@ -763,10 +797,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               }`}
             >
               <Key className="w-4 h-4 text-amber-400" />
-              <div>
+              <div className="flex-1">
                 <span className="block font-bold">Agent Tokens</span>
                 <span className="text-[10px] text-slate-500 font-normal">Stage 0 RBAC</span>
               </div>
+              {agentTokens.filter(t => !t.is_revoked).length > 0 && <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/30 text-amber-300 border border-amber-500/30">{agentTokens.filter(t => !t.is_revoked).length}</span>}
             </button>
 
             {/* Library & Python SDK - Accessible to ALL Roles */}
@@ -786,6 +821,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[9px] font-bold">pip</span>
                 </div>
                 <span className="text-[10px] text-slate-500 font-normal">Code integration & tests</span>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('approvals')}
+              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-mono transition-all text-left cursor-pointer ${
+                activeTab === 'approvals'
+                  ? 'bg-gradient-to-r from-amber-500/20 to-orange-600/20 text-amber-300 border border-amber-500/40 font-bold shadow-md shadow-amber-500/10'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+              }`}
+            >
+              <AlertTriangle className="w-4 h-4 text-amber-400" />
+              <div>
+                <span className="block font-bold">Approval Queue</span>
+                <span className="text-[10px] text-slate-500 font-normal">Pending Actions</span>
               </div>
             </button>
 
@@ -978,6 +1029,31 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                             <span className="text-slate-400 font-bold block text-[10px] uppercase mb-0.5">Cascade Explanation:</span>
                             {evt.reason}
                           </div>
+
+                          {/* Stage Score Breakdown */}
+                          <div className="space-y-2 mt-3 pt-3 border-t border-white/10">
+                            <span className="text-[10px] text-slate-500 uppercase font-mono tracking-wider">Detection Stage Scores</span>
+                            {[
+                              { label: 'Stage 1 — Rule Engine', stage: 'rule', color: 'bg-violet-500' },
+                              { label: 'Stage 2 — ML Vector', stage: 'ml', color: 'bg-teal-500' },
+                              { label: 'Stage 3 — LLM Judge', stage: 'llm', color: 'bg-amber-500' },
+                            ].map(({ label, stage, color }) => {
+                              const sig = evt.matched_signals?.find((s: any) => s.stage === stage || (stage === 'rule' && s.stage?.toLowerCase().includes('rule')));
+                              const score = sig?.score ?? 0;
+                              return (
+                                <div key={stage}>
+                                  <div className="flex justify-between mb-0.5">
+                                    <span className="text-[10px] text-slate-400 font-mono">{label}</span>
+                                    <span className="text-[10px] font-bold text-white font-mono">{Math.round(score * 100)}%</span>
+                                  </div>
+                                  <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                    <div className={`h-full ${color} rounded-full transition-all duration-700`} style={{ width: `${score*100}%` }} />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
                         </div>
                       ))}
                     </div>
@@ -991,6 +1067,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           {/* TAB 2: AUDIT LOG EXPLORER (Strictly Real SQLite Data in IST) */}
           {activeTab === 'audit' && (
             <div className="space-y-5">
+              {/* Verdict & Category Charts */}
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-6">
+                <VerdictDonutChart 
+                  blocked={auditChartStats.blocked} 
+                  allowed={auditChartStats.allowed} 
+                  requiresApproval={auditChartStats.requires_approval} 
+                />
+                <CategoryBreakdownChart events={auditLogs} />
+              </div>
+
               {/* Search & Filter Toolbar */}
               <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900/80 border border-white/10 shadow-lg">
                 <div className="relative flex-1 min-w-[280px]">
@@ -1015,17 +1101,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     <option value="BLOCK">BLOCK</option>
                   </select>
 
-                  {isAdmin && (
-                    <button
-                      type="button"
-                      onClick={handleExportLogs}
-                      className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-                      title="Export Audit History to JSON"
-                    >
-                      <Download className="w-3.5 h-3.5 text-teal-400" />
-                      <span>Export</span>
-                    </button>
-                  )}
+                  <button
+                    onClick={() => {
+                      const headers = ['ID','Timestamp','Agent','Tool','Risk Score','Verdict','Explanation','Source','User Email'];
+                      const rows = auditLogs.map(e => [
+                        e.id, e.timestamp, e.agent_id, e.tool_name,
+                        e.risk_score.toFixed(3), e.verdict.toUpperCase(),
+                        `"${(e.explanation||'').replace(/"/g,'""')}"`,
+                        e.incoming_source, e.user_email||''
+                      ]);
+                      const csv = [headers.join(','),...rows.map(r=>r.join(','))].join('\n');
+                      const blob = new Blob([csv],{type:'text/csv'});
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href=url; a.download=`kyron-audit-${new Date().toISOString().slice(0,10)}.csv`;
+                      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                      toast.success('Audit log exported');
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 text-xs font-mono flex items-center gap-2 cursor-pointer transition-all"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Export CSV
+                  </button>
 
                   <span className="text-xs text-slate-400 font-mono">
                     {filteredAuditLogs.length} real events (SQLite WAL)
@@ -1066,7 +1163,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       </tr>
                     ) : (
                       filteredAuditLogs.map((evt, idx) => (
-                        <tr key={evt.id || idx} className="hover:bg-white/5 transition-colors">
+                        <tr key={evt.id || idx} className="hover:bg-white/5 transition-colors cursor-pointer" onClick={() => setForensicEvent(evt)}>
                           <td className="p-3.5 text-slate-500">{String(idx + 1).padStart(2, '0')}</td>
                           <td className="p-3.5 text-slate-300 whitespace-nowrap">
                             <span className="font-bold text-white block">{formatIST(evt.timestamp)}</span>
@@ -1486,10 +1583,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
             </div>
           )}
+          {activeTab === 'approvals' && (
+            <ApprovalQueueView />
+          )}
 
         </main>
 
       </div>
+
+      <EventForensicDrawer 
+        event={forensicEvent} 
+        onClose={() => setForensicEvent(null)} 
+      />
 
     </div>
   );
