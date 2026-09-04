@@ -3,11 +3,12 @@ import {
   Shield, Play, Terminal, CheckCircle2, AlertTriangle, XOctagon, RefreshCw, 
   Cpu, Layers, Lock, Database, Search, Activity, FileText, Key, Radio, Sliders, Check, Trash2, Save,
   ArrowLeft, LogOut, ExternalLink, User, Sparkles, Server, Users, UserCheck, UserX, ShieldAlert,
-  Download, Clock
+  Download, Clock, Code, BookOpen, Package
 } from 'lucide-react';
 import { ATTACK_SCENARIOS } from '../data/content';
 import { UserSession, UserRole, VerdictType } from '../types';
 import { RiskTimelineChart } from './RiskTimelineChart';
+import { LibraryInformationView } from './LibraryInformationView';
 import { 
   runAttackScenario, 
   startContinuousSimulation, 
@@ -18,7 +19,7 @@ import {
   updatePolicy, 
   generateAgentToken, 
   listAgentTokens, 
-  revokeAgentToken,
+  revokeAgentToken, 
   subscribeToEventStream, 
   listUsers,
   inviteUser,
@@ -35,7 +36,7 @@ interface DashboardViewProps {
   currentUser: UserSession | null;
   onBackToLanding: () => void;
   onLogout: () => void;
-  initialTab?: 'simulation' | 'audit' | 'policy' | 'tokens' | 'users';
+  initialTab?: 'simulation' | 'audit' | 'policy' | 'tokens' | 'users' | 'library';
   reducedMotion?: boolean;
 }
 
@@ -60,7 +61,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   initialTab = 'simulation',
   reducedMotion = false
 }) => {
-  const [activeTab, setActiveTab] = useState<'simulation' | 'audit' | 'policy' | 'tokens' | 'users'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'simulation' | 'audit' | 'policy' | 'tokens' | 'users' | 'library'>(initialTab);
   
   // Continuous agents toggle
   const [continuousMode, setContinuousMode] = useState(false);
@@ -768,6 +769,26 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
             </button>
 
+            {/* Library & Python SDK - Accessible to ALL Roles */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('library')}
+              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-mono transition-all text-left cursor-pointer ${
+                activeTab === 'library'
+                  ? 'bg-gradient-to-r from-teal-500/20 to-indigo-600/20 text-teal-300 border border-teal-500/40 font-bold shadow-md shadow-teal-500/10'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+              }`}
+            >
+              <Code className="w-4 h-4 text-emerald-400" />
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <span className="block font-bold">Library & SDK</span>
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[9px] font-bold">pip</span>
+                </div>
+                <span className="text-[10px] text-slate-500 font-normal">Code integration & tests</span>
+              </div>
+            </button>
+
             {/* Admin-Exclusive Feature: User Governance */}
             {isAdmin && (
               <button
@@ -1217,7 +1238,41 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </table>
               </div>
 
+              {/* SDK Quick Link Banner */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-teal-500/10 via-slate-900/80 to-indigo-500/10 border border-teal-500/20 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-teal-500/15 border border-teal-500/30 text-teal-300">
+                    <Code className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h5 className="text-xs font-bold text-white flex items-center gap-2">
+                      Ready to enforce this token in your Python code?
+                      <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[9px] font-mono">pip install kyron-security</span>
+                    </h5>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Check out interactive multi-scenario guides, LangChain/CrewAI wrappers, and runnable terminal smoke tests.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('library')}
+                  className="px-4 py-2 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 border border-teal-500/40 text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <span>Open Library & SDK Docs</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
             </div>
+          )}
+
+          {/* TAB: PYTHON LIBRARY & SDK INTEGRATION (All Roles) */}
+          {activeTab === 'library' && (
+            <LibraryInformationView 
+              currentUser={currentUser} 
+              activeToken={generatedToken?.token} 
+            />
           )}
 
           {/* TAB 5: ADMIN USER GOVERNANCE & ACTIVE SESSIONS (Admin exclusive) */}

@@ -24,7 +24,7 @@ import { setStoredToken, loginAsGuest } from './services/api';
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
   const [currentView, setCurrentView] = useState<'landing' | 'login' | 'dashboard'>('landing');
-  const [demoInitialTab, setDemoInitialTab] = useState<'simulation' | 'audit' | 'policy' | 'tokens'>('simulation');
+  const [demoInitialTab, setDemoInitialTab] = useState<'simulation' | 'audit' | 'policy' | 'tokens' | 'users' | 'library'>('simulation');
   const [reducedMotion, setReducedMotion] = useState(false);
   const [showRoleToast, setShowRoleToast] = useState(false);
   const [guestLoading, setGuestLoading] = useState(false);
@@ -70,7 +70,7 @@ export default function App() {
     }
   };
 
-  const handleOpenDemo = (initialTab: 'simulation' | 'audit' | 'policy' | 'tokens' = 'simulation') => {
+  const handleOpenDemo = (initialTab: 'simulation' | 'audit' | 'policy' | 'tokens' | 'users' | 'library' = 'simulation') => {
     setDemoInitialTab(initialTab);
     if (!currentUser) {
       setCurrentView('login');
