@@ -927,20 +927,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           mobileSidebarOpen ? 'block' : 'hidden md:flex'
         }`}>
           <div className="space-y-2">
-            <span className="text-[10px] uppercase font-mono text-slate-400 px-3 tracking-wider block mb-2 font-bold">
+            <span className="text-[10px] uppercase font-mono text-slate-500 px-3 tracking-wider block mb-2 font-bold">
               SECURITY OPERATIONS
             </span>
             
             <button
               type="button"
               onClick={() => setActiveTab('simulation')}
-              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-mono transition-all text-left cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-mono transition-all duration-150 ease-out text-left cursor-pointer active:scale-[0.99] ${
                 activeTab === 'simulation'
-                  ? 'bg-gradient-to-r from-teal-500/20 to-indigo-600/20 text-teal-300 border border-teal-500/40 font-bold shadow-md shadow-teal-500/10'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                  ? 'bg-white/[0.08] text-white border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] font-semibold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.03] border border-transparent'
               }`}
             >
-              <Terminal className="w-4 h-4 text-teal-400" />
+              <div className="relative">
+                <Terminal className={`w-4 h-4 ${activeTab === 'simulation' ? 'text-teal-400' : 'text-slate-400'}`} />
+                {activeTab === 'simulation' && (
+                  <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.9)]" />
+                )}
+              </div>
               <div>
                 <span className="block font-bold">Attack Simulator</span>
                 <span className="text-[10px] text-slate-500 font-normal">Single-click test threats</span>
@@ -950,30 +955,40 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <button
               type="button"
               onClick={() => { setActiveTab('audit'); setNewEventCount(0); }}
-              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-mono transition-all text-left cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-mono transition-all duration-150 ease-out text-left cursor-pointer active:scale-[0.99] ${
                 activeTab === 'audit'
-                  ? 'bg-gradient-to-r from-teal-500/20 to-indigo-600/20 text-teal-300 border border-teal-500/40 font-bold shadow-md shadow-teal-500/10'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                  ? 'bg-white/[0.08] text-white border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] font-semibold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.03] border border-transparent'
               }`}
             >
-              <Database className="w-4 h-4 text-indigo-400" />
+              <div className="relative">
+                <Database className={`w-4 h-4 ${activeTab === 'audit' ? 'text-indigo-400' : 'text-slate-400'}`} />
+                {activeTab === 'audit' && (
+                  <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.9)]" />
+                )}
+              </div>
               <div className="flex-1">
                 <span className="block font-bold">Audit Logs</span>
                 <span className="text-[10px] text-slate-500 font-normal">Real SQLite IST Traces</span>
               </div>
-              {newEventCount > 0 && <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-500/30 text-teal-300 border border-teal-500/30">{newEventCount > 99 ? '99+' : newEventCount}</span>}
+              {newEventCount > 0 && <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30 font-mono">{newEventCount > 99 ? '99+' : newEventCount}</span>}
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('policy')}
-              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-mono transition-all text-left cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-mono transition-all duration-150 ease-out text-left cursor-pointer active:scale-[0.99] ${
                 activeTab === 'policy'
-                  ? 'bg-gradient-to-r from-teal-500/20 to-indigo-600/20 text-teal-300 border border-teal-500/40 font-bold shadow-md shadow-teal-500/10'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                  ? 'bg-white/[0.08] text-white border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] font-semibold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.03] border border-transparent'
               }`}
             >
-              <Sliders className="w-4 h-4 text-purple-400" />
+              <div className="relative">
+                <Sliders className={`w-4 h-4 ${activeTab === 'policy' ? 'text-purple-400' : 'text-slate-400'}`} />
+                {activeTab === 'policy' && (
+                  <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.9)]" />
+                )}
+              </div>
               <div>
                 <span className="block font-bold">Policy Engine</span>
                 <span className="text-[10px] text-slate-500 font-normal">{isIntern ? 'Read-Only (Protected)' : 'policy.yaml editor'}</span>
@@ -983,35 +998,45 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('tokens')}
-              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-mono transition-all text-left cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-mono transition-all duration-150 ease-out text-left cursor-pointer active:scale-[0.99] ${
                 activeTab === 'tokens'
-                  ? 'bg-gradient-to-r from-teal-500/20 to-indigo-600/20 text-teal-300 border border-teal-500/40 font-bold shadow-md shadow-teal-500/10'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                  ? 'bg-white/[0.08] text-white border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] font-semibold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.03] border border-transparent'
               }`}
             >
-              <Key className="w-4 h-4 text-amber-400" />
+              <div className="relative">
+                <Key className={`w-4 h-4 ${activeTab === 'tokens' ? 'text-amber-400' : 'text-slate-400'}`} />
+                {activeTab === 'tokens' && (
+                  <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.9)]" />
+                )}
+              </div>
               <div className="flex-1">
                 <span className="block font-bold">Agent Tokens</span>
                 <span className="text-[10px] text-slate-500 font-normal">Stage 0 RBAC</span>
               </div>
-              {agentTokens.filter(t => !t.is_revoked).length > 0 && <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/30 text-amber-300 border border-amber-500/30">{agentTokens.filter(t => !t.is_revoked).length}</span>}
+              {agentTokens.filter(t => !t.is_revoked).length > 0 && <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">{agentTokens.filter(t => !t.is_revoked).length}</span>}
             </button>
 
             {/* Library & Python SDK - Accessible to ALL Roles */}
             <button
               type="button"
               onClick={() => setActiveTab('library')}
-              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-mono transition-all text-left cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-mono transition-all duration-150 ease-out text-left cursor-pointer active:scale-[0.99] ${
                 activeTab === 'library'
-                  ? 'bg-gradient-to-r from-teal-500/20 to-indigo-600/20 text-teal-300 border border-teal-500/40 font-bold shadow-md shadow-teal-500/10'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                  ? 'bg-white/[0.08] text-white border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] font-semibold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.03] border border-transparent'
               }`}
             >
-              <Code className="w-4 h-4 text-emerald-400" />
+              <div className="relative">
+                <Code className={`w-4 h-4 ${activeTab === 'library' ? 'text-emerald-400' : 'text-slate-400'}`} />
+                {activeTab === 'library' && (
+                  <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
+                )}
+              </div>
               <div>
                 <div className="flex items-center gap-1.5">
                   <span className="block font-bold">Library & SDK</span>
-                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[9px] font-bold">pip</span>
+                  <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[9px] font-bold">pip</span>
                 </div>
                 <span className="text-[10px] text-slate-500 font-normal">Code integration & tests</span>
               </div>
@@ -1020,13 +1045,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('approvals')}
-              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-mono transition-all text-left cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-mono transition-all duration-150 ease-out text-left cursor-pointer active:scale-[0.99] ${
                 activeTab === 'approvals'
-                  ? 'bg-gradient-to-r from-amber-500/20 to-orange-600/20 text-amber-300 border border-amber-500/40 font-bold shadow-md shadow-amber-500/10'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                  ? 'bg-white/[0.08] text-white border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] font-semibold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.03] border border-transparent'
               }`}
             >
-              <AlertTriangle className="w-4 h-4 text-amber-400" />
+              <div className="relative">
+                <AlertTriangle className={`w-4 h-4 ${activeTab === 'approvals' ? 'text-amber-400' : 'text-slate-400'}`} />
+                {activeTab === 'approvals' && (
+                  <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.9)]" />
+                )}
+              </div>
               <div>
                 <span className="block font-bold">Approval Queue</span>
                 <span className="text-[10px] text-slate-500 font-normal">Pending Actions</span>
@@ -1036,13 +1066,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <button
               type="button"
               onClick={() => { setActiveTab('agents'); setMobileSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-mono transition-all text-left cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-mono transition-all duration-150 ease-out text-left cursor-pointer active:scale-[0.99] ${
                 activeTab === 'agents'
-                  ? 'bg-gradient-to-r from-teal-500/20 to-cyan-600/20 text-cyan-300 border border-teal-500/40 font-bold shadow-md shadow-cyan-500/10'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                  ? 'bg-white/[0.08] text-white border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] font-semibold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.03] border border-transparent'
               }`}
             >
-              <Cpu className="w-4 h-4 text-cyan-400" />
+              <div className="relative">
+                <Cpu className={`w-4 h-4 ${activeTab === 'agents' ? 'text-cyan-400' : 'text-slate-400'}`} />
+                {activeTab === 'agents' && (
+                  <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.9)]" />
+                )}
+              </div>
               <div>
                 <span className="block font-bold">Agent Registry</span>
                 <span className="text-[10px] text-slate-500 font-normal">Multi-Agent Leaderboard</span>
@@ -1054,18 +1089,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('users')}
-                className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-mono transition-all text-left cursor-pointer ${
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-mono transition-all duration-150 ease-out text-left cursor-pointer active:scale-[0.99] ${
                   activeTab === 'users'
-                    ? 'bg-gradient-to-r from-amber-500/20 to-rose-600/20 text-amber-300 border border-amber-500/40 font-bold shadow-md shadow-amber-500/10'
-                    : 'text-amber-400/80 hover:text-amber-300 hover:bg-amber-500/10'
+                    ? 'bg-white/[0.08] text-amber-300 border border-amber-500/30 shadow-[inset_0_1px_0_0_rgba(251,191,36,0.15)] font-semibold'
+                    : 'text-slate-400 hover:text-amber-300 hover:bg-white/[0.03] border border-transparent'
                 }`}
               >
-                <Users className="w-4 h-4 text-amber-400" />
+                <div className="relative">
+                  <Users className="w-4 h-4 text-amber-400" />
+                  {activeTab === 'users' && (
+                    <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.9)]" />
+                  )}
+                </div>
                 <div>
                   <span className="block font-bold flex items-center gap-1.5">
                     User Governance 👑
                   </span>
-                  <span className="text-[10px] text-amber-500/70 font-normal">Track all active sessions</span>
+                  <span className="text-[10px] text-slate-500 font-normal">Track all active sessions</span>
                 </div>
               </button>
             )}
@@ -1134,83 +1174,87 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   </button>
                 </div>
 
-                {/* Custom Threat Playbook Card */}
-                <div className="rounded-2xl p-4 bg-gradient-to-br from-slate-900 via-slate-900 to-purple-950/40 border border-purple-500/30 shadow-xl space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-purple-400" />
-                      <span className="text-xs font-bold text-white font-mono uppercase tracking-wider">Custom Threat Playbook</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowCustomPlaybook(!showCustomPlaybook)}
-                      className="text-[10px] font-mono text-purple-300 hover:text-white px-2.5 py-1 rounded-lg bg-purple-500/20 border border-purple-500/30 cursor-pointer transition-colors"
-                    >
-                      {showCustomPlaybook ? 'Hide Builder' : 'Build Custom Attack'}
-                    </button>
-                  </div>
-
-                  {showCustomPlaybook && (
-                    <div className="space-y-3 pt-2 border-t border-purple-500/20 text-xs font-mono animate-fade-in">
-                      <div>
-                        <label className="text-[10px] text-slate-400 block mb-1">PAYLOAD / PROMPT TEXT:</label>
-                        <textarea
-                          rows={2}
-                          value={customPrompt}
-                          onChange={(e) => setCustomPrompt(e.target.value)}
-                          placeholder="Type any injection, jailbreak, or prompt override..."
-                          className="w-full bg-slate-950 border border-white/10 rounded-xl p-2.5 text-xs font-mono text-white placeholder-slate-600 focus:outline-none focus:border-purple-400"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="text-[10px] text-slate-400 block mb-1">PROPOSED TOOL:</label>
-                          <select
-                            value={customTool}
-                            onChange={(e) => setCustomTool(e.target.value)}
-                            className="w-full bg-slate-950 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-purple-400 font-mono"
-                          >
-                            <option value="call_http">call_http</option>
-                            <option value="write_file">write_file</option>
-                            <option value="read_file">read_file</option>
-                            <option value="execute_code">execute_code</option>
-                            <option value="send_email">send_email</option>
-                            <option value="search_web">search_web</option>
-                          </select>
+                {/* Custom Threat Playbook Card (Double-Bezel Obsidian Sandbox) */}
+                <div className="p-1 rounded-2xl bg-white/[0.03] border border-white/[0.08] shadow-2xl">
+                  <div className="p-4 rounded-[calc(1rem-2px)] bg-slate-950/90 border border-white/[0.04] space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-teal-500/10 border border-teal-500/20 text-teal-400">
+                          <Terminal className="w-3.5 h-3.5" />
                         </div>
-                        <div>
-                          <label className="text-[10px] text-slate-400 block mb-1">TARGET ARGUMENT:</label>
-                          <input
-                            type="text"
-                            value={customTarget}
-                            onChange={(e) => setCustomTarget(e.target.value)}
-                            placeholder="URL or file path"
-                            className="w-full bg-slate-950 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-purple-400 font-mono"
-                          />
-                        </div>
+                        <span className="text-xs font-bold text-white font-mono uppercase tracking-wider">Custom Threat Playbook</span>
                       </div>
-
                       <button
                         type="button"
-                        disabled={customExecuting || !customPrompt.trim()}
-                        onClick={handleLaunchCustomThreat}
-                        className="w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-500/30 to-pink-500/30 hover:from-purple-500/40 hover:to-pink-500/40 border border-purple-500/40 text-purple-200 font-bold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 transition-all shadow-md"
+                        onClick={() => setShowCustomPlaybook(!showCustomPlaybook)}
+                        className="text-[10px] font-mono text-slate-300 hover:text-white px-2.5 py-1 rounded-lg bg-white/[0.05] hover:bg-white/[0.08] border border-white/10 cursor-pointer transition-colors active:scale-[0.98]"
                       >
-                        {customExecuting ? (
-                          <>
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                            <span>SCREENING PAYLOAD...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Shield className="w-3.5 h-3.5" />
-                            <span>EXECUTE CUSTOM ATTACK</span>
-                          </>
-                        )}
+                        {showCustomPlaybook ? 'Hide Builder' : 'Build Custom Attack'}
                       </button>
                     </div>
-                  )}
+
+                    {showCustomPlaybook && (
+                      <div className="space-y-3 pt-2 border-t border-white/[0.08] text-xs font-mono animate-fade-in">
+                        <div>
+                          <label className="text-[10px] text-slate-400 block mb-1 font-mono">PAYLOAD / PROMPT TEXT:</label>
+                          <textarea
+                            rows={2}
+                            value={customPrompt}
+                            onChange={(e) => setCustomPrompt(e.target.value)}
+                            placeholder="Type any injection, jailbreak, or prompt override..."
+                            className="w-full bg-black/60 border border-white/10 rounded-xl p-2.5 text-xs font-mono text-white placeholder-slate-600 focus:outline-none focus:border-teal-400/60 transition-colors"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[10px] text-slate-400 block mb-1 font-mono">PROPOSED TOOL:</label>
+                            <select
+                              value={customTool}
+                              onChange={(e) => setCustomTool(e.target.value)}
+                              className="w-full bg-black/60 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-teal-400/60 font-mono transition-colors"
+                            >
+                              <option value="call_http">call_http</option>
+                              <option value="write_file">write_file</option>
+                              <option value="read_file">read_file</option>
+                              <option value="execute_code">execute_code</option>
+                              <option value="send_email">send_email</option>
+                              <option value="search_web">search_web</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-slate-400 block mb-1 font-mono">TARGET ARGUMENT:</label>
+                            <input
+                              type="text"
+                              value={customTarget}
+                              onChange={(e) => setCustomTarget(e.target.value)}
+                              placeholder="URL or file path"
+                              className="w-full bg-black/60 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-teal-400/60 font-mono transition-colors"
+                            />
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={customExecuting || !customPrompt.trim()}
+                          onClick={handleLaunchCustomThreat}
+                          className="w-full py-2.5 rounded-xl bg-teal-400 hover:bg-teal-300 text-slate-950 font-mono text-xs font-bold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 active:scale-[0.98] transition-transform duration-150 ease-out shadow-[0_1px_3px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.4)]"
+                        >
+                          {customExecuting ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <span>SCREENING PAYLOAD...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Shield className="w-3.5 h-3.5" />
+                              <span>EXECUTE CUSTOM ATTACK</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-3.5">

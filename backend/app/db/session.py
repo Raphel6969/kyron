@@ -36,9 +36,9 @@ engine = create_engine(
 )
 
 # Enable WAL (Write-Ahead Logging) and normal sync for ultra-fast SQLite concurrency
-@event.listens_for(Engine, "connect")
+@event.listens_for(engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
-    if hot_url.startswith("sqlite"):
+    if engine.dialect.name == "sqlite":
         try:
             cursor = dbapi_connection.cursor()
             cursor.execute("PRAGMA journal_mode=WAL;")
@@ -101,6 +101,8 @@ def init_db() -> None:
     # 3. Initialize Cold Storage schema if connected
     if cold_engine:
         try:
+            with cold_engine.connect() as conn:
+                conn.rollback()
             Base.metadata.create_all(bind=cold_engine)
             logger.info("Cold Storage (Neon DB) tables verified.")
         except Exception as err:

@@ -235,50 +235,57 @@ export const Hero: React.FC<HeroProps> = ({ onOpenDemo, onGuestLogin, guestLoadi
           Evaluating every untrusted prompt and proposed tool call in <strong className="text-teal-300 font-mono">&lt;1.8ms</strong> before execution occurs.
         </p>
 
-        {/* Global Live Telemetry Stat Bar */}
+        {/* Global Live Telemetry Stat Bar (Double-Bezel Architecture) */}
         <div className="mt-6 w-full max-w-4xl grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
           {[
-            { label: 'Total Screened', value: liveStats?.total_screened, icon: '🛡️' },
-            { label: 'Attacks Blocked', value: liveStats?.blocked, icon: '🚫' },
-            { label: 'Block Rate', value: liveStats?.block_rate ? `${liveStats.block_rate}%` : null, icon: '📊' },
-            { label: 'Avg Risk Score', value: liveStats?.average_risk_score?.toFixed(2), icon: '⚡' }
-          ].map((stat, i) => (
-            <div key={i} className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center flex flex-col justify-center animate-in fade-in duration-500">
-              <div className="text-xl mb-1">{stat.icon}</div>
-              <div className="text-2xl font-bold font-mono text-white mb-1">
-                {stat.value !== undefined && stat.value !== null ? stat.value : <span className="opacity-50">---</span>}
+            { label: 'Total Screened', value: liveStats?.total_screened, icon: Shield, color: 'text-teal-400' },
+            { label: 'Attacks Blocked', value: liveStats?.blocked, icon: XOctagon, color: 'text-rose-400' },
+            { label: 'Block Rate', value: liveStats?.block_rate ? `${liveStats.block_rate}%` : null, icon: Activity, color: 'text-cyan-400' },
+            { label: 'Avg Risk Score', value: liveStats?.average_risk_score?.toFixed(2), icon: Zap, color: 'text-amber-400' }
+          ].map((stat, i) => {
+            const Icon = stat.icon;
+            return (
+              <div key={i} className="p-1 rounded-2xl bg-white/[0.03] border border-white/[0.08] shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
+                <div className="p-3.5 rounded-[calc(1rem-2px)] bg-slate-950/80 border border-white/[0.04] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] text-center flex flex-col items-center justify-center">
+                  <div className="p-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] mb-2">
+                    <Icon className={`w-3.5 h-3.5 ${stat.color}`} />
+                  </div>
+                  <div className="text-2xl font-bold font-mono text-white tracking-tight mb-1">
+                    {stat.value !== undefined && stat.value !== null ? stat.value : <span className="opacity-40">---</span>}
+                  </div>
+                  <div className="text-[10px] text-slate-400 uppercase tracking-widest font-mono font-medium">{stat.label}</div>
+                </div>
               </div>
-              <div className="text-[10px] text-slate-500 uppercase tracking-wider">{stat.label}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        {/* Live Threat Ticker Banner (L2) */}
-        <div className="w-full max-w-4xl p-2.5 px-4 rounded-xl bg-slate-950/80 border border-teal-500/20 backdrop-blur-md flex items-center gap-3 overflow-hidden text-xs font-mono mb-6 shadow-lg shadow-teal-500/5">
-          <div className="flex items-center gap-2 shrink-0 pr-3 border-r border-white/10">
+        {/* Live Threat Ticker Banner (Subtle Hardware Telemetry Look) */}
+        <div className="w-full max-w-4xl p-2 px-3.5 rounded-xl bg-slate-950/90 border border-white/[0.08] backdrop-blur-md flex items-center gap-3 overflow-hidden text-xs font-mono mb-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
+          <div className="flex items-center gap-2 shrink-0 pr-3 border-r border-white/[0.08]">
             <Radio className="w-3.5 h-3.5 text-teal-400 animate-pulse" />
-            <span className="text-[10px] font-bold text-teal-300 uppercase tracking-wider">LIVE TELEMETRY</span>
+            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">LIVE TELEMETRY</span>
           </div>
-          <div className="flex items-center gap-8 overflow-x-auto no-scrollbar py-0.5 whitespace-nowrap">
+          <div className="flex items-center gap-6 overflow-x-auto no-scrollbar py-0.5 whitespace-nowrap">
             {recentThreatFeed.map((item, idx) => (
               <div key={idx} className="inline-flex items-center gap-2">
                 <span className={`w-1.5 h-1.5 rounded-full ${item.verdict === 'BLOCK' ? 'bg-rose-400' : item.verdict === 'ALLOW' ? 'bg-teal-400' : 'bg-amber-400'}`} />
-                <span className="text-slate-300 font-bold">{item.agent}:</span>
-                <code className="text-teal-300">{item.tool}()</code>
-                <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
-                  item.verdict === 'BLOCK' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' :
-                  item.verdict === 'ALLOW' ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30' :
-                  'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                <span className="text-slate-300 font-semibold">{item.agent}:</span>
+                <code className="text-teal-300/90">{item.tool}()</code>
+                <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold font-mono ${
+                  item.verdict === 'BLOCK' ? 'bg-rose-500/15 text-rose-300 border border-rose-500/25' :
+                  item.verdict === 'ALLOW' ? 'bg-teal-500/15 text-teal-300 border border-teal-500/25' :
+                  'bg-amber-500/15 text-amber-300 border border-amber-500/25'
                 }`}>
                   {item.verdict}
                 </span>
-                <span className="text-slate-500 text-[10px]">• {item.time}</span>
+                <span className="text-slate-500 text-[10px]">· {item.time}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Primary Call To Actions */}
+        {/* Primary Call To Actions (Tactile & High-End) */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto">
           {onGuestLogin && (
             <button
@@ -286,9 +293,11 @@ export const Hero: React.FC<HeroProps> = ({ onOpenDemo, onGuestLogin, guestLoadi
               type="button"
               disabled={guestLoading}
               onClick={onGuestLogin}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3 rounded-full bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-500 text-slate-950 font-mono text-xs font-black hover:opacity-95 transition-all shadow-xl shadow-teal-500/30 glow-pill cursor-pointer disabled:opacity-50"
+              className="w-full sm:w-auto group inline-flex items-center justify-center gap-2.5 px-6 py-2.5 rounded-full bg-teal-400 hover:bg-teal-300 text-slate-950 font-mono text-xs font-bold active:scale-[0.98] transition-transform duration-150 ease-out shadow-[0_1px_3px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.4)] cursor-pointer disabled:opacity-50"
             >
-              <Sparkles className={`w-4 h-4 fill-current ${guestLoading ? 'animate-spin' : ''}`} />
+              <div className="w-5 h-5 rounded-full bg-slate-950/15 flex items-center justify-center">
+                <Sparkles className={`w-3 h-3 fill-slate-950 text-slate-950 ${guestLoading ? 'animate-spin' : ''}`} />
+              </div>
               <span>{guestLoading ? 'Starting Session...' : 'Try Demo as Guest (No Login)'}</span>
             </button>
           )}
@@ -297,16 +306,18 @@ export const Hero: React.FC<HeroProps> = ({ onOpenDemo, onGuestLogin, guestLoadi
             id="hero-attack-sim-btn"
             type="button"
             onClick={() => onOpenDemo('simulation')}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-teal-500 to-indigo-600 text-white font-mono text-xs font-bold hover:opacity-95 transition-all shadow-lg shadow-teal-500/25 glow-pill cursor-pointer"
+            className="w-full sm:w-auto group inline-flex items-center justify-center gap-2.5 px-5 py-2.5 rounded-full bg-white/[0.08] hover:bg-white/[0.14] text-white border border-white/15 active:scale-[0.98] transition-transform duration-150 ease-out font-mono text-xs font-semibold shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] cursor-pointer"
           >
-            <Play className="w-3.5 h-3.5 fill-current" />
+            <div className="w-5 h-5 rounded-full bg-white/[0.08] flex items-center justify-center">
+              <Play className="w-2.5 h-2.5 fill-current" />
+            </div>
             <span>Launch Console</span>
           </button>
 
           <a
             id="hero-explore-architecture-btn"
             href="#interactive-architecture"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-white/5 text-slate-200 hover:text-white border border-white/10 hover:border-white/20 hover:bg-white/10 backdrop-blur-md transition-all font-mono text-xs font-semibold"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-white/[0.04] text-slate-300 hover:text-white border border-white/10 hover:border-white/20 hover:bg-white/[0.08] backdrop-blur-md active:scale-[0.98] transition-all duration-150 ease-out font-mono text-xs font-medium"
           >
             <span>8-Phase Pipeline</span>
             <ArrowRight className="w-3.5 h-3.5" />
