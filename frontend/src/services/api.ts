@@ -3,13 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// In production (single Docker container), API is served from same origin via nginx proxy.
-// In local dev, fall back to the explicit backend port.
+// In production or Docker container, API is served from same origin via nginx proxy.
+// Only when running standalone Vite dev server (:5173 or :3000) do we point to :8000.
 export const API_BASE_URL = (() => {
-  if (import.meta.env.VITE_API_BASE_URL) return import.meta.env.VITE_API_BASE_URL;
-  // If we're not on localhost, we're deployed — use same origin (nginx proxies to backend)
-  if (typeof window !== 'undefined' && !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) {
-    return '';  // same-origin: nginx handles /screen, /auth, etc.
+  const envUrl = import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_URL;
+  if (envUrl !== undefined && envUrl !== '') return envUrl === '/' ? '' : envUrl;
+
+  if (typeof window !== 'undefined') {
+    // If running under Vite dev server, connect directly to backend on :8000
+    if (window.location.port === '5173' || window.location.port === '3000') {
+      return 'http://127.0.0.1:8000';
+    }
+    // In Docker (ports 80, 8080) or deployed (Render, custom domain), use same-origin nginx proxy
+    return '';
   }
   return 'http://127.0.0.1:8000';
 })();
@@ -463,7 +469,8 @@ export function subscribeToEventStream(
   const connectWS = () => {
     if (isClosed) return;
     try {
-      const wsUrl = API_BASE_URL.replace(/^http/, 'ws') + `/ws/events${tokenParam}`;
+      const base = API_BASE_URL || (typeof window !== 'undefined' ? `${window.location.protocol === 'https:' ? 'https:' : 'http:'}//${window.location.host}` : 'http://127.0.0.1:8000');
+      const wsUrl = base.replace(/^http/, 'ws') + `/ws/events${tokenParam}`;
       ws = new WebSocket(wsUrl);
 
       ws.onmessage = (event) => {
