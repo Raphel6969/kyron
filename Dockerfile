@@ -37,65 +37,14 @@ COPY .env.example ./.env.example
 
 # Copy built React frontend into nginx html dir
 COPY --from=frontend-builder /frontend/dist /usr/share/nginx/html
-COPY --from=frontend-builder /frontend/dist/kyron_logo.png /usr/share/nginx/html/ 2>/dev/null || true
 
-# ── Nginx config: serve React + proxy /screen /auth /events /demo /tokens /users /health /docs /ws ──
-RUN cat > /etc/nginx/conf.d/kyron.conf << 'EOF'
-server {
-    listen 80;
-    server_name _;
-    root /usr/share/nginx/html;
-    index index.html;
-
-    # API proxy — all backend routes
-    location ~ ^/(screen|auth|events|demo|tokens|users|health|docs|openapi.json|ws) {
-        proxy_pass http://127.0.0.1:8000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 300s;
-        proxy_connect_timeout 10s;
-    }
-
-    # React SPA — everything else serves index.html
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-
-    # Health check for Render
-    location /nginx-health {
-        return 200 'ok';
-        add_header Content-Type text/plain;
-    }
-}
-EOF
-
-# Remove default nginx site
+# ── Nginx config: serve React + proxy backend routes ──────────────────────────
+COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 RUN rm -f /etc/nginx/sites-enabled/default
 
-# ── Startup script ─────────────────────────────────────────────────────────
-RUN cat > /app/start.sh << 'EOF'
-#!/bin/bash
-set -e
-echo "🛡️  Starting Kyron Layer..."
-
-# Start nginx in background
-nginx &
-echo "✅ nginx started"
-
-# Start FastAPI backend
-uvicorn app.main:app \
-  --host 127.0.0.1 \
-  --port 8000 \
-  --workers 1 \
-  --log-level info \
-  --no-access-log
-EOF
-RUN chmod +x /app/start.sh
+# ── Startup script ────────────────────────────────────────────────────────────
+COPY docker/start.sh /app/start.sh
+RUN sed -i 's/\r$//' /app/start.sh && chmod +x /app/start.sh
 
 EXPOSE 80
 

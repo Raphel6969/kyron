@@ -9,6 +9,9 @@ services:
       dockerfile: Dockerfile
     ports:
       - "80:80"
+      - "8080:80"
+    env_file:
+      - .env
     environment:
       - ENVIRONMENT=development
       - DEMO_MODE=true
@@ -17,8 +20,6 @@ services:
       - JWT_ALGORITHM=HS256
       - FRONTEND_URL=http://localhost
       - POLICY_FILE_PATH=policy/policy.example.yaml
-    volumes:
-      - kyron-db:/app
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/health"]
       interval: 30s
@@ -26,6 +27,3 @@ services:
       retries: 5
       start_period: 60s
     restart: unless-stopped
-
-volumes:
-  kyron-db:
