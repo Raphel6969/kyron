@@ -106,6 +106,18 @@ export const Hero: React.FC<HeroProps> = ({ onOpenDemo, onGuestLogin, guestLoadi
   });
 
   const [liveStats, setLiveStats] = useState<any>(null);
+  const [recentThreatFeed, setRecentThreatFeed] = useState<Array<{
+    agent: string;
+    tool: string;
+    verdict: string;
+    time: string;
+  }>>([
+    { agent: 'finance_agent', tool: 'write_file', verdict: 'BLOCK', time: '2s ago' },
+    { agent: 'research_agent', tool: 'search_web', verdict: 'ALLOW', time: '6s ago' },
+    { agent: 'code_agent', tool: 'execute_code', verdict: 'BLOCK', time: '11s ago' },
+    { agent: 'sync_agent', tool: 'call_http', verdict: 'BLOCK', time: '15s ago' },
+    { agent: 'assistant_agent', tool: 'read_file', verdict: 'ALLOW', time: '22s ago' },
+  ]);
 
   const activeSample = threats[activeSampleIndex];
 
@@ -124,6 +136,17 @@ export const Hero: React.FC<HeroProps> = ({ onOpenDemo, onGuestLogin, guestLoadi
     const unsubscribe = subscribeToEventStream((event) => {
       if (event.verdict || event.type === 'AGENT_STEP') {
         loadStats();
+        if (event.tool_name || event.tool) {
+          setRecentThreatFeed((prev) => [
+            {
+              agent: event.agent_id || 'agent',
+              tool: event.tool_name || event.tool || 'action',
+              verdict: (event.verdict || 'BLOCK').toUpperCase(),
+              time: 'just now',
+            },
+            ...prev.slice(0, 7),
+          ]);
+        }
       }
     });
 
@@ -230,8 +253,33 @@ export const Hero: React.FC<HeroProps> = ({ onOpenDemo, onGuestLogin, guestLoadi
           ))}
         </div>
 
+        {/* Live Threat Ticker Banner (L2) */}
+        <div className="w-full max-w-4xl p-2.5 px-4 rounded-xl bg-slate-950/80 border border-teal-500/20 backdrop-blur-md flex items-center gap-3 overflow-hidden text-xs font-mono mb-6 shadow-lg shadow-teal-500/5">
+          <div className="flex items-center gap-2 shrink-0 pr-3 border-r border-white/10">
+            <Radio className="w-3.5 h-3.5 text-teal-400 animate-pulse" />
+            <span className="text-[10px] font-bold text-teal-300 uppercase tracking-wider">LIVE TELEMETRY</span>
+          </div>
+          <div className="flex items-center gap-8 overflow-x-auto no-scrollbar py-0.5 whitespace-nowrap">
+            {recentThreatFeed.map((item, idx) => (
+              <div key={idx} className="inline-flex items-center gap-2">
+                <span className={`w-1.5 h-1.5 rounded-full ${item.verdict === 'BLOCK' ? 'bg-rose-400' : item.verdict === 'ALLOW' ? 'bg-teal-400' : 'bg-amber-400'}`} />
+                <span className="text-slate-300 font-bold">{item.agent}:</span>
+                <code className="text-teal-300">{item.tool}()</code>
+                <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                  item.verdict === 'BLOCK' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' :
+                  item.verdict === 'ALLOW' ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30' :
+                  'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                }`}>
+                  {item.verdict}
+                </span>
+                <span className="text-slate-500 text-[10px]">• {item.time}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Primary Call To Actions */}
-        <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto">
           {onGuestLogin && (
             <button
               id="hero-guest-demo-btn"

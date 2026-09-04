@@ -512,3 +512,27 @@ export function subscribeToEventStream(
     if (es) es.close();
   };
 }
+
+// ── Agent Registry & Leaderboard ─────────────────────────────────────────────
+
+export interface AgentRegistryEntry {
+  agent_id: string;
+  total_calls: number;
+  blocked_calls: number;
+  block_rate: number;
+  avg_risk_score: number;
+  last_seen: string | null;
+}
+
+export async function fetchAgentRegistry(): Promise<{ agents: AgentRegistryEntry[]; total: number }> {
+  const response = await fetch(`${API_BASE_URL}/agents/registry`, { headers: getHeaders() });
+  if (!response.ok) return { agents: [], total: 0 };
+  return response.json();
+}
+
+export async function fetchAgentLeaderboard(): Promise<{ leaderboard: AgentRegistryEntry[]; total: number }> {
+  const response = await fetch(`${API_BASE_URL}/agents/leaderboard`, { headers: getHeaders() });
+  if (!response.ok) return { leaderboard: [], total: 0 };
+  return response.json();
+}
+

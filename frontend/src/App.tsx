@@ -27,7 +27,7 @@ import { ToastProvider } from './components/ToastSystem';
 function AppContent() {
   const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
   const [currentView, setCurrentView] = useState<'landing' | 'login' | 'dashboard'>('landing');
-  const [demoInitialTab, setDemoInitialTab] = useState<'simulation' | 'audit' | 'policy' | 'tokens' | 'users' | 'library'>('simulation');
+  const [demoInitialTab, setDemoInitialTab] = useState<'simulation' | 'audit' | 'policy' | 'tokens' | 'users' | 'library' | 'approvals' | 'agents'>('simulation');
   const [reducedMotion, setReducedMotion] = useState(false);
   const [showRoleToast, setShowRoleToast] = useState(false);
   const [guestLoading, setGuestLoading] = useState(false);
@@ -73,7 +73,7 @@ function AppContent() {
     }
   };
 
-  const handleOpenDemo = (initialTab: 'simulation' | 'audit' | 'policy' | 'tokens' | 'users' | 'library' = 'simulation') => {
+  const handleOpenDemo = (initialTab: 'simulation' | 'audit' | 'policy' | 'tokens' | 'users' | 'library' | 'approvals' | 'agents' = 'simulation') => {
     setDemoInitialTab(initialTab);
     if (!currentUser) {
       setCurrentView('login');
